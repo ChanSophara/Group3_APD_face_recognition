@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Model Test</title>
+    <!-- Change this line -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-robot"></i>
+                    <h1>Face Recognition Model Test</h1>
+                </div>
+                <div class="model-status">
+                    <span id="statusIndicator" class="status-indicator">
+                        <i class="fas fa-circle"></i>
+                        <span id="statusText">Checking model...</span>
+                    </span>
+                    <span id="studentCount" class="student-count">
+                        <i class="fas fa-users"></i>
+                        <span id="countText">0 students</span>
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="grid-layout">
+                <!-- Camera Testing -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-video"></i> Live Camera Test</h2>
+                        <p class="card-subtitle">Use your camera to test face recognition</p>
+                    </div>
+                    
+                    <!-- Camera Feed -->
+                    <div id="cameraContainer" class="camera-container">
+                        <video id="video" autoplay playsinline class="video-feed"></video>
+                        <div id="faceOverlay" class="face-overlay hidden"></div>
+                        <canvas id="canvas" class="hidden"></canvas>
+                        <div id="faceInfo" class="face-info hidden"></div>
+                        <img id="processedImage" class="processed-image hidden">
+                    </div>
+                    
+                    <!-- Camera Controls -->
+                    <div class="controls">
+                        <button id="startCamera" class="btn btn-success">
+                            <i class="fas fa-video"></i>
+                            <span>Start Camera</span>
+                        </button>
+                        <button id="stopCamera" class="btn btn-danger" disabled>
+                            <i class="fas fa-video-slash"></i>
+                            <span>Stop Camera</span>
+                        </button>
+                        <button id="testFace" class="btn btn-primary" disabled>
+                            <i class="fas fa-user-check"></i>
+                            <span>Test Recognition</span>
+                        </button>
+                        <button id="captureFace" class="btn btn-secondary" disabled>
+                            <i class="fas fa-camera"></i>
+                            <span>Capture Face</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Test Results -->
+                    <div id="cameraResults" class="results hidden">
+                        <h3><i class="fas fa-chart-bar"></i> Recognition Results</h3>
+                        <div class="result-grid">
+                            <div class="result-item">
+                                <span class="label">Recognized Name:</span>
+                                <span id="recognizedName" class="value">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="label">Confidence:</span>
+                                <span id="recognitionConfidence" class="value">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="label">Face Detected:</span>
+                                <span id="faceDetected" class="value">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="label">Status:</span>
+                                <span id="recognitionStatus" class="value status-pending">Pending</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Image Upload Testing -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-cloud-upload-alt"></i> Upload Image Test</h2>
+                        <p class="card-subtitle">Upload an image to test face recognition</p>
+                    </div>
+                    
+                    <!-- Upload Area -->
+                    <div id="uploadArea" class="upload-area">
+                        <input type="file" id="imageUpload" accept="image/*" class="hidden">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <h4>Drop image here or click to upload</h4>
+                        <p class="upload-hint">Supports JPG, PNG, GIF (max 16MB)</p>
+                    </div>
+                    
+                    <!-- Preview -->
+                    <div id="imagePreview" class="image-preview hidden">
+                        <h4><i class="fas fa-image"></i> Preview</h4>
+                        <img id="previewImage" src="" alt="Preview">
+                        <div class="preview-controls">
+                            <button id="clearPreview" class="btn btn-outline">
+                                <i class="fas fa-trash"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Controls -->
+                    <div class="controls">
+                        <button id="testUpload" class="btn btn-primary" disabled>
+                            <i class="fas fa-user-check"></i>
+                            <span>Test Recognition</span>
+                        </button>
+                        <button id="detectFaces" class="btn btn-secondary" disabled>
+                            <i class="fas fa-search"></i>
+                            <span>Detect Faces</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Upload Results -->
+                    <div id="uploadResults" class="results hidden">
+                        <h3><i class="fas fa-chart-bar"></i> Recognition Results</h3>
+                        <div class="result-grid">
+                            <div class="result-item">
+                                <span class="label">Recognized Name:</span>
+                                <span id="uploadRecognizedName" class="value">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="label">Confidence:</span>
+                                <span id="uploadConfidence" class="value">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="label">Result:</span>
+                                <span id="uploadResult" class="value status-pending">Pending</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Students List -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <h2><i class="fas fa-users"></i> Students in Model</h2>
+                    <p class="card-subtitle">List of students that the model can recognize</p>
+                </div>
+                <div id="studentsList" class="students-list">
+                    <div class="loading-students">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Loading students list...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Instructions -->
+            <div class="card instructions">
+                <h3><i class="fas fa-info-circle"></i> How to Use</h3>
+                <div class="instructions-grid">
+                    <div class="instruction">
+                        <h4><i class="fas fa-video"></i> Camera Test:</h4>
+                        <ul>
+                            <li>Click "Start Camera" to begin</li>
+                            <li>Position your face in frame</li>
+                            <li>Click "Test Recognition" to verify</li>
+                            <li>Results will show instantly</li>
+                        </ul>
+                    </div>
+                    <div class="instruction">
+                        <h4><i class="fas fa-upload"></i> Upload Test:</h4>
+                        <ul>
+                            <li>Click upload area or drag image</li>
+                            <li>Supported formats: JPG, PNG, GIF</li>
+                            <li>Click "Test Recognition" after upload</li>
+                            <li>Clear button to start over</li>
+                        </ul>
+                    </div>
+                    <div class="instruction">
+                        <h4><i class="fas fa-lightbulb"></i> Tips:</h4>
+                        <ul>
+                            <li>Ensure good lighting</li>
+                            <li>Face should be clearly visible</li>
+                            <li>Keep face within the overlay area</li>
+                            <li>Minimum confidence: 50%</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Face Recognition Model Test Tool • v1.0 • Running on port 5005</p>
+            <p class="footer-info">
+                <i class="fas fa-server"></i> Model Status: 
+                <span id="footerStatus">Checking...</span>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Modal -->
+    <div id="testResultModal" class="modal hidden">
+        <div class="modal-content">
+            <div id="testResultIcon" class="modal-icon"></div>
+            <h3 id="testResultTitle" class="modal-title"></h3>
+            <p id="testResultMessage" class="modal-message"></p>
+            <div class="modal-actions">
+                <button id="closeTestResult" class="btn btn-outline">Close</button>
+                <button id="testAgain" class="btn btn-primary">Test Again</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <!-- And this line -->
+    <script src="{{ url_for('static', filename='test_model.js') }}"></script>
+</body>
+</html>
