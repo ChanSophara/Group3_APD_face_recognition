@@ -1,0 +1,13 @@
+# Ignore trained models
+*.yml
+*.pkl
+*.h5
+*.pt
+*.onnx
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore data (optional but recommended)
+Train_face/data/
