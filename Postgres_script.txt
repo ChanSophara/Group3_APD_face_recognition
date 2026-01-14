@@ -1,0 +1,44 @@
+-- Create database (run this in PostgreSQL)
+CREATE DATABASE face_recognition_db;
+
+-- Connect to the database and run these:
+-- \c face_recognition_db
+
+-- Create recognition_history table
+CREATE TABLE recognition_history (
+    id SERIAL PRIMARY KEY,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    test_type VARCHAR(50) NOT NULL CHECK (test_type IN ('Live Camera Test', 'Upload Image Test')),
+    student_name VARCHAR(255),
+    confidence DECIMAL(5,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create index for faster queries
+CREATE INDEX idx_recognition_history_timestamp ON recognition_history(timestamp);
+CREATE INDEX idx_recognition_history_test_type ON recognition_history(test_type);
+CREATE INDEX idx_recognition_history_student ON recognition_history(student_name);
+
+-- Create analytics view for daily performance
+CREATE VIEW daily_performance AS
+SELECT 
+    DATE(timestamp) as date,
+    test_type,
+    COUNT(*) as total_tests,
+    AVG(confidence) as avg_confidence,
+    MIN(confidence) as min_confidence,
+    MAX(confidence) as max_confidence
+FROM recognition_history
+GROUP BY DATE(timestamp), test_type;
+
+-- Create view for student performance
+CREATE VIEW student_performance AS
+SELECT 
+    student_name,
+    COUNT(*) as recognition_count,
+    AVG(confidence) as avg_confidence,
+    MIN(confidence) as min_confidence,
+    MAX(confidence) as max_confidence
+FROM recognition_history
+WHERE student_name IS NOT NULL AND student_name != 'Unknown'
+GROUP BY student_name;

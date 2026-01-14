@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - Face Recognition</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h1>Face Recognition Analytics</h1>
+                </div>
+                <div class="model-status">
+                    <a href="/" class="btn btn-outline" style="text-decoration: none;">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Back to Test</span>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Statistics Cards -->
+            <div class="analytics-section">
+                <div class="analytics-card">
+                    <h3><i class="fas fa-chart-bar"></i> Overall Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalTests">0</div>
+                            <div class="stat-label">Total Tests</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="uniqueStudents">0</div>
+                            <div class="stat-label">Unique Students</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="avgConfidence">0%</div>
+                            <div class="stat-label">Avg Confidence</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <h2><i class="fas fa-chart-line"></i> Confidence Trend Over Time</h2>
+                    <p class="card-subtitle">Shows recognition confidence scores over time</p>
+                </div>
+                <div class="chart-container">
+                    <canvas id="confidenceTrendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Recognition History -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <h2><i class="fas fa-history"></i> Recent Recognition History</h2>
+                    <p class="card-subtitle">Latest face recognition attempts and results</p>
+                </div>
+                <div class="table-container">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Test Type</th>
+                                <th>Student</th>
+                                <th>Confidence</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 40px;">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <span>Loading history...</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button id="prevPage" class="btn btn-outline" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                        Previous
+                    </button>
+                    <span id="pageInfo">Page 1 of 1</span>
+                    <button id="nextPage" class="btn btn-outline" disabled>
+                        Next
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Face Recognition Analytics Dashboard • v2.0 • Running on port 5005</p>
+            <p class="footer-info">
+                <i class="fas fa-database"></i> 
+                Database: <span id="dbStatus" class="footer-status status-loaded">Connected</span>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Face Recognition Model Test</title>
-    <!-- Change this line -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -15,18 +14,24 @@
         <header class="header">
             <div class="header-content">
                 <div class="logo">
-                    <i class="fas fa-robot"></i>
+                    <div class="logo-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
                     <h1>Face Recognition Model Test</h1>
                 </div>
                 <div class="model-status">
-                    <span id="statusIndicator" class="status-indicator">
-                        <i class="fas fa-circle"></i>
+                    <div class="status-badge">
+                        <span class="status-dot" id="statusDot"></span>
                         <span id="statusText">Checking model...</span>
-                    </span>
-                    <span id="studentCount" class="student-count">
+                    </div>
+                    <div class="student-count">
                         <i class="fas fa-users"></i>
                         <span id="countText">0 students</span>
-                    </span>
+                    </div>
+                    <a href="/dashboard" class="btn btn-outline" style="text-decoration: none;">
+                        <i class="fas fa-chart-line"></i>
+                        <span>View Analytics</span>
+                    </a>
                 </div>
             </div>
         </header>
@@ -37,7 +42,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h2><i class="fas fa-video"></i> Live Camera Test</h2>
-                        <p class="card-subtitle">Use your camera to test face recognition</p>
+                        <p class="card-subtitle">Use your camera to test face recognition in real-time</p>
                     </div>
                     
                     <!-- Camera Feed -->
@@ -45,8 +50,15 @@
                         <video id="video" autoplay playsinline class="video-feed"></video>
                         <div id="faceOverlay" class="face-overlay hidden"></div>
                         <canvas id="canvas" class="hidden"></canvas>
-                        <div id="faceInfo" class="face-info hidden"></div>
+                        <div id="faceInfo" class="face-info hidden">
+                            <div class="face-info-name" id="faceInfoName">Recognizing...</div>
+                            <div class="face-info-confidence" id="faceInfoConfidence">--%</div>
+                        </div>
                         <img id="processedImage" class="processed-image hidden">
+                        <div class="camera-status" id="cameraStatus">
+                            <i class="fas fa-video-slash"></i>
+                            <span>Camera off</span>
+                        </div>
                     </div>
                     
                     <!-- Camera Controls -->
@@ -70,7 +82,7 @@
                     </div>
                     
                     <!-- Test Results -->
-                    <div id="cameraResults" class="results hidden">
+                    <div id="cameraResults" class="results">
                         <h3><i class="fas fa-chart-bar"></i> Recognition Results</h3>
                         <div class="result-grid">
                             <div class="result-item">
@@ -87,7 +99,7 @@
                             </div>
                             <div class="result-item">
                                 <span class="label">Status:</span>
-                                <span id="recognitionStatus" class="value status-pending">Pending</span>
+                                <span id="recognitionStatus" class="value status-pending">Idle</span>
                             </div>
                         </div>
                     </div>
@@ -178,6 +190,7 @@
                             <li>Click "Start Camera" to begin</li>
                             <li>Position your face in frame</li>
                             <li>Click "Test Recognition" to verify</li>
+                            <li>Click "Capture Face" to log test to database</li>
                             <li>Results will show instantly</li>
                         </ul>
                     </div>
@@ -187,6 +200,7 @@
                             <li>Click upload area or drag image</li>
                             <li>Supported formats: JPG, PNG, GIF</li>
                             <li>Click "Test Recognition" after upload</li>
+                            <li>Automatically logs to database</li>
                             <li>Clear button to start over</li>
                         </ul>
                     </div>
@@ -196,7 +210,8 @@
                             <li>Ensure good lighting</li>
                             <li>Face should be clearly visible</li>
                             <li>Keep face within the overlay area</li>
-                            <li>Minimum confidence: 50%</li>
+                            <li>Minimum confidence: 40%</li>
+                            <li>Check analytics for performance</li>
                         </ul>
                     </div>
                 </div>
@@ -205,10 +220,13 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Face Recognition Model Test Tool • v1.0 • Running on port 5005</p>
+            <p>Face Recognition Model Test Tool • v2.0 • Running on port 5005</p>
             <p class="footer-info">
                 <i class="fas fa-server"></i> Model Status: 
-                <span id="footerStatus">Checking...</span>
+                <span id="footerStatus" class="footer-status status-checking">Checking...</span>
+                •
+                <i class="fas fa-database"></i> Database: 
+                <span id="dbStatus" class="footer-status status-checking">Connecting...</span>
             </p>
         </footer>
     </div>
@@ -226,10 +244,52 @@
         </div>
     </div>
 
+    <!-- Test Details Modal -->
+    <div id="testDetailsModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-info-circle"></i> Test Details</h3>
+                <button id="closeDetails" class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="result-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Test Type:</span>
+                        <span id="detailTestType" class="detail-value">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Timestamp:</span>
+                        <span id="detailTimestamp" class="detail-value">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Student:</span>
+                        <span id="detailStudent" class="detail-value">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Confidence:</span>
+                        <span id="detailConfidence" class="detail-value">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Database Status:</span>
+                        <span id="detailDbStatus" class="detail-value">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="viewInDashboard" class="btn btn-primary">
+                    <i class="fas fa-chart-line"></i>
+                    View in Dashboard
+                </button>
+                <button id="closeDetailsBtn" class="btn btn-outline">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Container -->
     <div id="notificationContainer"></div>
 
-    <!-- And this line -->
     <script src="{{ url_for('static', filename='test_model.js') }}"></script>
 </body>
 </html>

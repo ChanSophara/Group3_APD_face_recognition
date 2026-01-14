@@ -5,13 +5,177 @@ import base64
 import json
 import os
 from datetime import datetime
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from contextlib import contextmanager
 
 app = Flask(__name__, 
-           static_folder='static',  # Specify static folder
-           static_url_path='/static')  # URL path for static files
+           static_folder='static',
+           static_url_path='/static')
 app.secret_key = 'face-test-secret-2024'
 app.config['SESSION_COOKIE_NAME'] = 'face_test_session'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+
+# Database configuration
+DB_CONFIG = {
+    'dbname': 'face_recognition_db',
+    'user': 'postgres',  # Change as needed
+    'password': '2510',  # Change as needed
+    'host': 'localhost',
+    'port': '5432'
+}
+
+@contextmanager
+def get_db_connection():
+    """Database connection context manager"""
+    conn = psycopg2.connect(**DB_CONFIG)
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+@contextmanager
+def get_db_cursor():
+    """Database cursor context manager"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        try:
+            yield cursor
+            conn.commit()
+        finally:
+            cursor.close()
+
+def log_recognition(test_type, student_name, confidence):
+    """Log recognition result to database"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO recognition_history (test_type, student_name, confidence)
+                VALUES (%s, %s, %s)
+                """,
+                (test_type, student_name, confidence)
+            )
+        return True
+    except Exception as e:
+        print(f"Error logging to database: {e}")
+        return False
+
+def get_recognition_history(limit=50, offset=0):
+    """Get recognition history from database"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT 
+                    id,
+                    timestamp,
+                    test_type,
+                    student_name,
+                    confidence,
+                    CASE 
+                        WHEN confidence >= 70 THEN 'High'
+                        WHEN confidence >= 40 THEN 'Medium'
+                        ELSE 'Low'
+                    END as confidence_level
+                FROM recognition_history
+                ORDER BY timestamp DESC
+                LIMIT %s OFFSET %s
+                """,
+                (limit, offset)
+            )
+            return cursor.fetchall()
+    except Exception as e:
+        print(f"Error fetching history: {e}")
+        return []
+
+def get_analytics_data(days=7):
+    """Get analytics data for charts"""
+    try:
+        with get_db_cursor() as cursor:
+            # Daily recognition counts
+            cursor.execute(
+                """
+                SELECT 
+                    DATE(timestamp) as date,
+                    COUNT(*) as count,
+                    AVG(confidence) as avg_confidence
+                FROM recognition_history
+                WHERE timestamp >= CURRENT_DATE - INTERVAL '%s days'
+                GROUP BY DATE(timestamp)
+                ORDER BY date
+                """,
+                (days,)
+            )
+            daily_data = cursor.fetchall()
+            
+            # Confidence distribution
+            cursor.execute(
+                """
+                SELECT 
+                    CASE 
+                        WHEN confidence >= 70 THEN 'High (70-100%)'
+                        WHEN confidence >= 40 THEN 'Medium (40-69%)'
+                        ELSE 'Low (0-39%)'
+                    END as confidence_range,
+                    COUNT(*) as count
+                FROM recognition_history
+                WHERE timestamp >= CURRENT_DATE - INTERVAL '%s days'
+                GROUP BY confidence_range
+                ORDER BY confidence_range
+                """,
+                (days,)
+            )
+            confidence_distribution = cursor.fetchall()
+            
+            # Test type distribution
+            cursor.execute(
+                """
+                SELECT 
+                    test_type,
+                    COUNT(*) as count
+                FROM recognition_history
+                WHERE timestamp >= CURRENT_DATE - INTERVAL '%s days'
+                GROUP BY test_type
+                """,
+                (days,)
+            )
+            test_type_distribution = cursor.fetchall()
+            
+            return {
+                'daily_data': daily_data,
+                'confidence_distribution': confidence_distribution,
+                'test_type_distribution': test_type_distribution
+            }
+    except Exception as e:
+        print(f"Error fetching analytics: {e}")
+        return {}
+
+def get_statistics():
+    """Get overall statistics"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) as total_tests FROM recognition_history")
+            total_tests = cursor.fetchone()['total_tests']
+            
+            cursor.execute("SELECT COUNT(DISTINCT student_name) as unique_students FROM recognition_history WHERE student_name IS NOT NULL AND student_name != 'Unknown'")
+            unique_students = cursor.fetchone()['unique_students']
+            
+            cursor.execute("SELECT AVG(confidence) as avg_confidence FROM recognition_history")
+            avg_confidence = cursor.fetchone()['avg_confidence'] or 0
+            
+            cursor.execute("SELECT COUNT(*) as today_tests FROM recognition_history WHERE DATE(timestamp) = CURRENT_DATE")
+            today_tests = cursor.fetchone()['today_tests']
+            
+            return {
+                'total_tests': total_tests,
+                'unique_students': unique_students,
+                'avg_confidence': round(float(avg_confidence), 2) if avg_confidence else 0,
+                'today_tests': today_tests
+            }
+    except Exception as e:
+        print(f"Error fetching statistics: {e}")
+        return {}
 
 # Initialize face recognizer
 try:
@@ -25,13 +189,13 @@ except Exception as e:
 
 @app.route('/')
 def index():
-    """Render the test model page"""
+    """Render the main dashboard"""
     return render_template('test_model.html')
 
-# Serve static files explicitly (optional but good practice)
-@app.route('/static/<path:filename>')
-def serve_static(filename):
-    return send_from_directory(app.static_folder, filename)
+@app.route('/dashboard')
+def dashboard():
+    """Render the analytics dashboard"""
+    return render_template('dashboard.html')
 
 @app.route('/api/detect-faces-with-boxes', methods=['POST'])
 def detect_faces_with_boxes():
@@ -78,6 +242,8 @@ def detect_faces_with_boxes():
 def test_face_recognition():
     """Test face recognition with camera or uploaded image"""
     try:
+        test_type = request.args.get('type', 'Upload Image Test')
+        
         # Check if it's file upload or base64 image
         if 'image' in request.files:
             # File upload
@@ -107,6 +273,10 @@ def test_face_recognition():
         
         recognized_name, confidence = face_recognizer.recognize_face(image)
         
+        # Log to database only for upload test (triggered by button)
+        if test_type == 'Upload Image Test':
+            log_recognition('Upload Image Test', recognized_name, confidence)
+        
         return jsonify({
             'success': True,
             'recognized_name': recognized_name or 'Unknown',
@@ -120,7 +290,7 @@ def test_face_recognition():
 
 @app.route('/api/capture-face', methods=['POST'])
 def capture_face():
-    """Capture face image for verification"""
+    """Capture face image for verification and log to database"""
     try:
         data = request.json
         image_data = data.get('image')
@@ -139,7 +309,7 @@ def capture_face():
         if image is None:
             return jsonify({'success': False, 'message': 'Invalid image'}), 400
         
-        # Detect face
+        # Detect and recognize face
         if not face_recognition_ready or face_recognizer is None:
             return jsonify({'success': False, 'message': 'Face recognition model not loaded'}), 500
         
@@ -148,19 +318,30 @@ def capture_face():
         face_count = len(faces)
         has_face = face_count > 0
         
-        # Calculate confidence (simplified)
+        # Calculate confidence
         confidence = 0
+        recognized_name = 'Unknown'
+        
         if has_face:
-            # Use face size as confidence indicator
-            (x, y, w, h) = faces[0]
-            face_area = w * h
-            img_area = image.shape[0] * image.shape[1]
-            confidence = min(100, int((face_area / img_area) * 300))
+            # Try to recognize the face
+            recognized_name, confidence = face_recognizer.recognize_face(image)
+            
+            # Log to database (Live Camera Test triggered by Capture Face button)
+            log_recognition('Live Camera Test', recognized_name, confidence)
+            
+            if confidence is None:
+                confidence = 0
+            else:
+                confidence = round(float(confidence), 2)
+        else:
+            # Log failed detection
+            log_recognition('Live Camera Test', 'No face detected', 0)
         
         return jsonify({
             'success': True,
             'face_detected': has_face,
             'face_count': face_count,
+            'recognized_name': recognized_name,
             'confidence': confidence
         })
         
@@ -195,6 +376,87 @@ def get_all_students():
             })
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/get-recognition-history')
+def get_history():
+    """Get recognition history from database"""
+    try:
+        limit = request.args.get('limit', 50, type=int)
+        offset = request.args.get('offset', 0, type=int)
+        
+        history = get_recognition_history(limit, offset)
+        
+        return jsonify({
+            'success': True,
+            'history': history,
+            'count': len(history)
+        })
+    except Exception as e:
+        print(f"Error getting history: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/get-analytics')
+def get_analytics():
+    """Get analytics data for charts"""
+    try:
+        days = request.args.get('days', 7, type=int)
+        analytics_data = get_analytics_data(days)
+        
+        return jsonify({
+            'success': True,
+            'analytics': analytics_data,
+            'statistics': get_statistics()
+        })
+    except Exception as e:
+        print(f"Error getting analytics: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+    
+
+@app.route('/api/get-confidence-trend')
+def get_confidence_trend():
+    """Get confidence trend data for chart"""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT 
+                    timestamp,
+                    student_name,
+                    confidence
+                FROM recognition_history
+                ORDER BY timestamp DESC
+                LIMIT 50
+                """
+            )
+            history = cursor.fetchall()
+            
+            return jsonify({
+                'success': True,
+                'history': history,
+                'count': len(history)
+            })
+    except Exception as e:
+        print(f"Error getting confidence trend: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+    
+
+@app.route('/api/get-statistics')
+def get_stats():
+    """Get overall statistics"""
+    try:
+        stats = get_statistics()
+        return jsonify({
+            'success': True,
+            'statistics': stats
+        })
+    except Exception as e:
+        print(f"Error getting statistics: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+# Serve static files
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    return send_from_directory(app.static_folder, filename)
 
 if __name__ == '__main__':
     # Print directory structure for debugging

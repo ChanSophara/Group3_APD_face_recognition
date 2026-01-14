@@ -1,4 +1,4 @@
-// Test Model functionality with real-time bounding boxes
+// Test Model functionality with real-time bounding boxes and database integration
 document.addEventListener('DOMContentLoaded', function() {
     // Elements
     const video = document.getElementById('video');
@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const faceOverlay = document.getElementById('faceOverlay');
     const processedImage = document.getElementById('processedImage');
     const faceInfo = document.getElementById('faceInfo');
+    const faceInfoName = document.getElementById('faceInfoName');
+    const faceInfoConfidence = document.getElementById('faceInfoConfidence');
     
     // Buttons
     const startCameraBtn = document.getElementById('startCamera');
@@ -28,11 +30,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const uploadResults = document.getElementById('uploadResults');
     
     // Status elements
-    const statusIndicator = document.getElementById('statusIndicator');
+    const statusDot = document.getElementById('statusDot');
     const statusText = document.getElementById('statusText');
     const countText = document.getElementById('countText');
     const studentsList = document.getElementById('studentsList');
     const footerStatus = document.getElementById('footerStatus');
+    const dbStatus = document.getElementById('dbStatus');
+    const cameraStatus = document.getElementById('cameraStatus');
     
     // Modal elements
     const testResultModal = document.getElementById('testResultModal');
@@ -42,12 +46,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeTestResult = document.getElementById('closeTestResult');
     const testAgainBtn = document.getElementById('testAgain');
     
+    // Test Details Modal
+    const testDetailsModal = document.getElementById('testDetailsModal');
+    const closeDetails = document.getElementById('closeDetails');
+    const closeDetailsBtn = document.getElementById('closeDetailsBtn');
+    const viewInDashboard = document.getElementById('viewInDashboard');
+    
     // State variables
     let currentStream = null;
     let isCameraOn = false;
     let detectionInterval = null;
     let modelStatus = 'checking';
     let studentCount = 0;
+    let databaseConnected = false;
     
     // Initialize
     initializeApp();
@@ -57,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setupUploadArea();
         checkModelStatus();
         loadStudentsList();
+        updateCameraStatus();
     }
     
     function setupEventListeners() {
@@ -87,10 +99,35 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Close modal on outside click
+        // Test Details Modal
+        if (closeDetails) {
+            closeDetails.addEventListener('click', () => {
+                hideDetailsModal();
+            });
+        }
+        
+        if (closeDetailsBtn) {
+            closeDetailsBtn.addEventListener('click', () => {
+                hideDetailsModal();
+            });
+        }
+        
+        if (viewInDashboard) {
+            viewInDashboard.addEventListener('click', () => {
+                window.location.href = '/dashboard';
+            });
+        }
+        
+        // Close modals on outside click
         testResultModal.addEventListener('click', (e) => {
             if (e.target === testResultModal) {
                 hideModal();
+            }
+        });
+        
+        testDetailsModal.addEventListener('click', (e) => {
+            if (e.target === testDetailsModal) {
+                hideDetailsModal();
             }
         });
     }
@@ -140,11 +177,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 studentCount = data.students_count || 0;
                 
                 updateStatusDisplay();
+                
+                // Check database connection
+                checkDatabaseConnection();
             }
         } catch (error) {
             console.error('Error checking model status:', error);
             modelStatus = 'error';
             updateStatusDisplay();
+            showNotification('Failed to connect to server', 'error');
+        }
+    }
+    
+    async function checkDatabaseConnection() {
+        try {
+            const response = await fetch('/api/get-statistics');
+            const data = await response.json();
+            
+            if (data.success) {
+                databaseConnected = true;
+                dbStatus.textContent = 'Connected';
+                dbStatus.className = 'footer-status status-loaded';
+            } else {
+                databaseConnected = false;
+                dbStatus.textContent = 'Disconnected';
+                dbStatus.className = 'footer-status status-error';
+            }
+        } catch (error) {
+            console.error('Error checking database connection:', error);
+            databaseConnected = false;
+            dbStatus.textContent = 'Disconnected';
+            dbStatus.className = 'footer-status status-error';
         }
     }
     
@@ -189,33 +252,39 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function updateStatusDisplay() {
         // Update status indicator
-        const statusIcon = statusIndicator.querySelector('i');
-        const statusTextElement = statusIndicator.querySelector('#statusText');
-        
         switch(modelStatus) {
             case 'loaded':
-                statusIcon.style.color = '#10b981';
-                statusTextElement.textContent = 'Model Loaded';
-                statusIndicator.className = 'status-indicator status-success';
+                statusDot.className = 'status-dot success';
+                statusText.textContent = 'Model Loaded';
+                footerStatus.textContent = 'Loaded';
+                footerStatus.className = 'footer-status status-loaded';
                 break;
             case 'checking':
-                statusIcon.style.color = '#f59e0b';
-                statusTextElement.textContent = 'Checking Model...';
-                statusIndicator.className = 'status-indicator status-warning';
+                statusDot.className = 'status-dot warning';
+                statusText.textContent = 'Checking Model...';
+                footerStatus.textContent = 'Checking...';
+                footerStatus.className = 'footer-status status-checking';
                 break;
             case 'error':
-                statusIcon.style.color = '#ef4444';
-                statusTextElement.textContent = 'Model Error';
-                statusIndicator.className = 'status-indicator status-error';
+                statusDot.className = 'status-dot error';
+                statusText.textContent = 'Model Error';
+                footerStatus.textContent = 'Error';
+                footerStatus.className = 'footer-status status-error';
                 break;
         }
         
         // Update student count
         countText.textContent = `${studentCount} student${studentCount !== 1 ? 's' : ''}`;
-        
-        // Update footer status
-        footerStatus.textContent = statusTextElement.textContent;
-        footerStatus.className = `footer-status status-${modelStatus}`;
+    }
+    
+    function updateCameraStatus() {
+        if (cameraStatus) {
+            if (isCameraOn) {
+                cameraStatus.innerHTML = '<i class="fas fa-video"></i><span>Camera active</span>';
+            } else {
+                cameraStatus.innerHTML = '<i class="fas fa-video-slash"></i><span>Camera off</span>';
+            }
+        }
     }
     
     function handleImageUpload(file) {
@@ -275,6 +344,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             updateCameraControls();
+            updateCameraStatus();
             startRealTimeDetection();
             
             showNotification('Camera started. Real-time face detection active.', 'success');
@@ -315,7 +385,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         isCameraOn = false;
         updateCameraControls();
-        cameraResults.classList.add('hidden');
+        updateCameraStatus();
+        
+        // Hide results
+        document.getElementById('recognizedName').textContent = '-';
+        document.getElementById('recognitionConfidence').textContent = '-';
+        document.getElementById('faceDetected').textContent = '-';
+        document.getElementById('recognitionStatus').textContent = 'Idle';
+        document.getElementById('recognitionStatus').className = 'value status-pending';
         
         showNotification('Camera stopped', 'info');
     }
@@ -422,25 +499,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function updateFaceInfo(name, confidence) {
         faceInfo.classList.remove('hidden');
-        faceInfo.innerHTML = `
-            <div class="face-info-name">${name}</div>
-            <div class="face-info-confidence">${confidence}% confidence</div>
-        `;
+        faceInfoName.textContent = name;
+        faceInfoConfidence.textContent = `${confidence}%`;
         
         // Update confidence color
-        const confidenceElement = faceInfo.querySelector('.face-info-confidence');
         if (confidence > 75) {
-            confidenceElement.className = 'face-info-confidence high-confidence';
+            faceInfoConfidence.className = 'face-info-confidence confidence-high';
         } else if (confidence > 50) {
-            confidenceElement.className = 'face-info-confidence medium-confidence';
+            faceInfoConfidence.className = 'face-info-confidence confidence-medium';
         } else {
-            confidenceElement.className = 'face-info-confidence low-confidence';
+            faceInfoConfidence.className = 'face-info-confidence confidence-low';
         }
     }
     
     function updateCameraResults(data) {
-        cameraResults.classList.remove('hidden');
-        
         document.getElementById('recognizedName').textContent = data.recognized_name || 'Unknown';
         document.getElementById('recognitionConfidence').textContent = data.confidence + '%';
         document.getElementById('faceDetected').textContent = data.has_face ? 'Yes' : 'No';
@@ -495,8 +567,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const imageData = canvas.toDataURL('image/jpeg', 0.9);
             
-            // Send for testing
-            const response = await fetch('/api/test-face-recognition', {
+            // Send for testing (without database logging)
+            const response = await fetch('/api/test-face-recognition?type=Live Camera Test', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -510,7 +582,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 showTestResult(
                     'success',
                     'Recognition Test Complete',
-                    `Recognized as: ${data.recognized_name}<br>Confidence: ${data.confidence}%`
+                    `Recognized as: ${data.recognized_name}<br>Confidence: ${data.confidence}%<br><br>Click "Capture Face" to save this test to database.`
                 );
             } else {
                 showTestResult('error', 'Recognition Failed', data.message);
@@ -540,7 +612,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const imageData = canvas.toDataURL('image/jpeg', 0.9);
             
-            // Send for face capture test
+            // Send for face capture test (this will log to database)
             const response = await fetch('/api/capture-face', {
                 method: 'POST',
                 headers: {
@@ -552,8 +624,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             
             if (data.success) {
+                // Show detailed test results
+                showTestDetails({
+                    testType: 'Live Camera Test',
+                    timestamp: new Date().toLocaleString(),
+                    student: data.recognized_name || 'Unknown',
+                    confidence: data.confidence,
+                    dbStatus: databaseConnected ? 'Logged to database' : 'Database error'
+                });
+                
                 showNotification(
-                    `Face ${data.face_detected ? 'detected' : 'not detected'}. Confidence: ${data.confidence}%`,
+                    `Face ${data.face_detected ? 'detected' : 'not detected'}. ${databaseConnected ? 'Saved to database.' : 'Database not connected.'}`,
                     data.face_detected ? 'success' : 'warning'
                 );
             }
@@ -580,8 +661,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const blob = await fetch(previewImage.src).then(r => r.blob());
             formData.append('image', blob, 'test.jpg');
             
-            // Send for testing
-            const response = await fetch('/api/test-face-recognition', {
+            // Send for testing (this will automatically log to database)
+            const response = await fetch('/api/test-face-recognition?type=Upload Image Test', {
                 method: 'POST',
                 body: formData
             });
@@ -589,10 +670,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             
             if (data.success) {
+                // Show detailed test results
+                showTestDetails({
+                    testType: 'Upload Image Test',
+                    timestamp: new Date().toLocaleString(),
+                    student: data.recognized_name || 'Unknown',
+                    confidence: data.confidence,
+                    dbStatus: databaseConnected ? 'Logged to database' : 'Database error'
+                });
+                
                 showTestResult(
                     'success',
                     'Upload Test Complete',
-                    `Recognized as: ${data.recognized_name}<br>Confidence: ${data.confidence}%`
+                    `Recognized as: ${data.recognized_name}<br>Confidence: ${data.confidence}%<br><br>Test has been saved to database.`
                 );
             } else {
                 showTestResult('error', 'Recognition Failed', data.message);
@@ -635,8 +725,32 @@ document.addEventListener('DOMContentLoaded', function() {
         testResultModal.classList.remove('hidden');
     }
     
+    function showTestDetails(details) {
+        // Update details modal content
+        document.getElementById('detailTestType').textContent = details.testType;
+        document.getElementById('detailTimestamp').textContent = details.timestamp;
+        document.getElementById('detailStudent').textContent = details.student;
+        document.getElementById('detailConfidence').textContent = `${details.confidence}%`;
+        document.getElementById('detailDbStatus').textContent = details.dbStatus;
+        
+        // Color code the database status
+        const dbStatusElement = document.getElementById('detailDbStatus');
+        if (details.dbStatus.includes('error')) {
+            dbStatusElement.style.color = '#ef4444';
+        } else {
+            dbStatusElement.style.color = '#10b981';
+        }
+        
+        // Show modal
+        testDetailsModal.classList.remove('hidden');
+    }
+    
     function hideModal() {
         testResultModal.classList.add('hidden');
+    }
+    
+    function hideDetailsModal() {
+        testDetailsModal.classList.add('hidden');
     }
     
     function showNotification(message, type = 'info') {
