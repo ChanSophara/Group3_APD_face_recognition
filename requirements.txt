@@ -1,23 +1,26 @@
-# Core Face Recognition
-opencv-python==4.8.0.74
-opencv-contrib-python==4.8.0.74
-numpy==1.24.3
-pillow==10.0.0
-dlib==19.24.2
-face-recognition==1.3.0
+# Core dependencies
+Flask==2.3.3
+Werkzeug==2.3.7
+Jinja2==3.1.2
 
-# Web Framework
-flask==2.3.3
-jinja2==3.1.2
-werkzeug==2.3.7
+# OpenCV and face recognition
+opencv-python==4.8.1.78
+opencv-contrib-python==4.8.1.78
+numpy==1.24.3
+scipy==1.11.3
+pillow==10.0.0
 
 # Database
 psycopg2-binary==2.9.7
-sqlalchemy==2.0.19
+SQLAlchemy==2.0.19
 
 # Machine Learning
 scikit-learn==1.3.0
 
-# Utilities
-python-dateutil==2.8.2
+# Face recognition (simplified - dlib is complex in Docker)
+cmake==3.27.7
+setuptools==68.2.2
+wheel==0.41.2
+
+# Add this line to requirements.txt
 python-dotenv==1.0.0

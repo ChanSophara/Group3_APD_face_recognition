@@ -8,6 +8,7 @@ from datetime import datetime
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from contextlib import contextmanager
+from dotenv import load_dotenv
 
 app = Flask(__name__, 
            static_folder='static',
@@ -17,12 +18,13 @@ app.config['SESSION_COOKIE_NAME'] = 'face_test_session'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 # Database configuration
+# Database configuration - use environment variables for Docker
 DB_CONFIG = {
-    'dbname': 'face_recognition_db',
-    'user': 'postgres',  # Change as needed
-    'password': '2510',  # Change as needed
-    'host': 'localhost',
-    'port': '5432'
+    'dbname': os.getenv('POSTGRES_DB', 'face_recognition_db'),
+    'user': os.getenv('POSTGRES_USER', 'postgres'),
+    'password': os.getenv('POSTGRES_PASSWORD', '2510'),
+    'host': os.getenv('DB_HOST', 'db'),  # 'db' is the service name in docker-compose
+    'port': os.getenv('DB_PORT', '5432')
 }
 
 @contextmanager
@@ -469,4 +471,5 @@ if __name__ == '__main__':
     if os.path.exists('static'):
         print("Files in static:", os.listdir('static'))
     
-    app.run(debug=True, port=5005, host='0.0.0.0')
+    # For Docker, use 0.0.0.0 to allow external connections
+    app.run(host='0.0.0.0', port=5000, debug=False)  # debug=False for production
