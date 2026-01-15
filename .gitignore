@@ -1,9 +1,0 @@
-# Ignore trained models
-*.yml
-*.pkl
-*.h5
-*.pt
-*.onnx
-
-# Ignore ML models
-model/

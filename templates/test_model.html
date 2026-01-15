@@ -10,7 +10,7 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
+        <!-- Header - FIXED: No longer sticky -->
         <header class="header">
             <div class="header-content">
                 <div class="logo">
@@ -21,16 +21,16 @@
                 </div>
                 <div class="model-status">
                     <div class="status-badge">
-                        <span class="status-dot" id="statusDot"></span>
-                        <span id="statusText">Checking model...</span>
+                        <span class="status-dot success" id="statusDot"></span>
+                        <span id="statusText">Model Loaded</span>
                     </div>
                     <div class="student-count">
                         <i class="fas fa-users"></i>
-                        <span id="countText">0 students</span>
+                        <span id="countText">17 students</span>
                     </div>
-                    <a href="/dashboard" class="btn btn-outline" style="text-decoration: none;">
+                    <a href="/dashboard" class="btn btn-outline">
                         <i class="fas fa-chart-line"></i>
-                        <span>View Analytics</span>
+                        <span>Analytics</span>
                     </a>
                 </div>
             </div>
@@ -42,17 +42,17 @@
                 <div class="card">
                     <div class="card-header">
                         <h2><i class="fas fa-video"></i> Live Camera Test</h2>
-                        <p class="card-subtitle">Use your camera to test face recognition in real-time</p>
+                        <p class="card-subtitle">Test face recognition in real-time with your camera</p>
                     </div>
                     
                     <!-- Camera Feed -->
                     <div id="cameraContainer" class="camera-container">
-                        <video id="video" autoplay playsinline class="video-feed"></video>
-                        <div id="faceOverlay" class="face-overlay hidden"></div>
+                        <video id="video" autoplay playsinline class="video-feed hidden"></video>
                         <canvas id="canvas" class="hidden"></canvas>
+                        <div id="faceOverlay" class="face-overlay hidden"></div>
                         <div id="faceInfo" class="face-info hidden">
                             <div class="face-info-name" id="faceInfoName">Recognizing...</div>
-                            <div class="face-info-confidence" id="faceInfoConfidence">--%</div>
+                            <div class="face-info-confidence confidence-high" id="faceInfoConfidence">--%</div>
                         </div>
                         <img id="processedImage" class="processed-image hidden">
                         <div class="camera-status" id="cameraStatus">
@@ -82,7 +82,7 @@
                     </div>
                     
                     <!-- Test Results -->
-                    <div id="cameraResults" class="results">
+                    <div id="cameraResults" class="results hidden">
                         <h3><i class="fas fa-chart-bar"></i> Recognition Results</h3>
                         <div class="result-grid">
                             <div class="result-item">
@@ -180,7 +180,7 @@
                 </div>
             </div>
             
-            <!-- Instructions -->
+            <!-- Instructions - FIXED: Now has proper spacing -->
             <div class="card instructions">
                 <h3><i class="fas fa-info-circle"></i> How to Use</h3>
                 <div class="instructions-grid">
@@ -190,7 +190,7 @@
                             <li>Click "Start Camera" to begin</li>
                             <li>Position your face in frame</li>
                             <li>Click "Test Recognition" to verify</li>
-                            <li>Click "Capture Face" to log test to database</li>
+                            <li>Click "Capture Face" to log test</li>
                             <li>Results will show instantly</li>
                         </ul>
                     </div>
@@ -221,22 +221,32 @@
         <!-- Footer -->
         <footer class="footer">
             <p>Face Recognition Model Test Tool • v2.0 • Running on port 5005</p>
-            <p class="footer-info">
-                <i class="fas fa-server"></i> Model Status: 
-                <span id="footerStatus" class="footer-status status-checking">Checking...</span>
-                •
-                <i class="fas fa-database"></i> Database: 
-                <span id="dbStatus" class="footer-status status-checking">Connecting...</span>
-            </p>
+            <div class="footer-info">
+                <span>
+                    <i class="fas fa-server"></i> Model Status: 
+                    <span id="footerStatus" class="footer-status status-loaded">Loaded</span>
+                </span>
+                <span>
+                    <i class="fas fa-database"></i> Database: 
+                    <span id="dbStatus" class="footer-status status-loaded">Connected</span>
+                </span>
+            </div>
         </footer>
     </div>
 
-    <!-- Modal -->
+    <!-- Test Result Modal -->
     <div id="testResultModal" class="modal hidden">
         <div class="modal-content">
-            <div id="testResultIcon" class="modal-icon"></div>
-            <h3 id="testResultTitle" class="modal-title"></h3>
-            <p id="testResultMessage" class="modal-message"></p>
+            <div class="modal-icon">
+                <div id="testResultIcon" class="icon-success hidden">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div id="testResultIconError" class="icon-error hidden">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+            </div>
+            <h3 id="testResultTitle" class="modal-title">Test Complete</h3>
+            <p id="testResultMessage" class="modal-message">Recognition test completed successfully.</p>
             <div class="modal-actions">
                 <button id="closeTestResult" class="btn btn-outline">Close</button>
                 <button id="testAgain" class="btn btn-primary">Test Again</button>
@@ -280,7 +290,7 @@
             <div class="modal-actions">
                 <button id="viewInDashboard" class="btn btn-primary">
                     <i class="fas fa-chart-line"></i>
-                    View in Dashboard
+                    View Analytics
                 </button>
                 <button id="closeDetailsBtn" class="btn btn-outline">Close</button>
             </div>

@@ -1,0 +1,14 @@
+services:
+  ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8085:8085  
+    user: "${UID:-1000}:${GID:-1000}" 
+    networks:
+      - MME_network
+
+networks:
+  MME_network:
+    driver: bridge

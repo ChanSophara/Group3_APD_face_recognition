@@ -12,7 +12,7 @@
 <body>
     <div class="container">
         <!-- Header -->
-        <header class="header">
+        <header class="header dashboard-header">
             <div class="header-content">
                 <div class="logo">
                     <div class="logo-icon">
@@ -21,7 +21,7 @@
                     <h1>Face Recognition Analytics</h1>
                 </div>
                 <div class="model-status">
-                    <a href="/" class="btn btn-outline" style="text-decoration: none;">
+                    <a href="/" class="btn btn-outline">
                         <i class="fas fa-arrow-left"></i>
                         <span>Back to Test</span>
                     </a>
@@ -51,7 +51,7 @@
                 </div>
             </div>
 
-            <!-- Chart -->
+            <!-- Chart - FIXED: Now has proper spacing -->
             <div class="card full-width">
                 <div class="card-header">
                     <h2><i class="fas fa-chart-line"></i> Confidence Trend Over Time</h2>
@@ -62,7 +62,7 @@
                 </div>
             </div>
 
-            <!-- Recognition History -->
+            <!-- Recognition History - FIXED: Now has proper spacing and table alignment -->
             <div class="card full-width">
                 <div class="card-header">
                     <h2><i class="fas fa-history"></i> Recent Recognition History</h2>
@@ -76,29 +76,60 @@
                                 <th>Test Type</th>
                                 <th>Student</th>
                                 <th>Confidence</th>
-                                <th>Status</th>
+                                
                             </tr>
                         </thead>
                         <tbody id="historyTableBody">
                             <tr>
-                                <td colspan="5" style="text-align: center; padding: 40px;">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    <span>Loading history...</span>
-                                </td>
+                                <td>2024-01-15 14:30:25</td>
+                                <td>Camera</td>
+                                <td>John Doe</td>
+                                <td>92%</td>
+                                <td><span class="confidence-badge confidence-high">High Confidence</span></td>
+                            </tr>
+                            <tr>
+                                <td>2024-01-15 14:28:10</td>
+                                <td>Upload</td>
+                                <td>Jane Smith</td>
+                                <td>78%</td>
+                                <td><span class="confidence-badge confidence-medium">Medium Confidence</span></td>
+                            </tr>
+                            <tr>
+                                <td>2024-01-15 14:25:45</td>
+                                <td>Camera</td>
+                                <td>Mike Johnson</td>
+                                <td>45%</td>
+                                <td><span class="confidence-badge confidence-low">Low Confidence</span></td>
+                            </tr>
+                            <tr>
+                                <td>2024-01-15 14:22:30</td>
+                                <td>Upload</td>
+                                <td>Sarah Wilson</td>
+                                <td>95%</td>
+                                <td><span class="confidence-badge confidence-high">High Confidence</span></td>
+                            </tr>
+                            <tr>
+                                <td>2024-01-15 14:20:15</td>
+                                <td>Camera</td>
+                                <td>Robert Brown</td>
+                                <td>65%</td>
+                                <td><span class="confidence-badge confidence-medium">Medium Confidence</span></td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
                 <div class="pagination">
-                    <button id="prevPage" class="btn btn-outline" disabled>
-                        <i class="fas fa-chevron-left"></i>
-                        Previous
-                    </button>
-                    <span id="pageInfo">Page 1 of 1</span>
-                    <button id="nextPage" class="btn btn-outline" disabled>
-                        Next
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
+                    <span id="pageInfo">Page 1 of 3</span>
+                    <div class="pagination-buttons">
+                        <button id="prevPage" class="btn btn-outline" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                            Previous
+                        </button>
+                        <button id="nextPage" class="btn btn-outline">
+                            Next
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </main>
@@ -106,10 +137,16 @@
         <!-- Footer -->
         <footer class="footer">
             <p>Face Recognition Analytics Dashboard • v2.0 • Running on port 5005</p>
-            <p class="footer-info">
-                <i class="fas fa-database"></i> 
-                Database: <span id="dbStatus" class="footer-status status-loaded">Connected</span>
-            </p>
+            <div class="footer-info">
+                <span>
+                    <i class="fas fa-database"></i> 
+                    Database: <span id="dbStatus" class="footer-status status-loaded">Connected</span>
+                </span>
+                <span>
+                    <i class="fas fa-sync-alt"></i>
+                    Last Updated: <span id="lastUpdated">Just now</span>
+                </span>
+            </div>
         </footer>
     </div>
 

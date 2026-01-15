@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification('Error loading recognition history', 'error');
             historyTableBody.innerHTML = `
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 40px; color: #ef4444;">
+                    <td colspan="4" style="text-align: center; padding: 40px; color: #ef4444;">
                         <i class="fas fa-exclamation-triangle"></i>
                         <span>Error loading history</span>
                     </td>
@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.length === 0) {
             historyTableBody.innerHTML = `
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 40px; color: #6b7280;">
+                    <td colspan="4" style="text-align: center; padding: 40px; color: #6b7280;">
                         <i class="fas fa-inbox"></i>
                         <span>No recognition records found</span>
                     </td>
@@ -130,20 +130,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const rows = data.map(item => {
             const timestamp = new Date(item.timestamp).toLocaleString();
             const confidence = item.confidence || 0;
-            let confidenceClass, statusDotClass, statusText;
+            let confidenceClass;
             
             if (confidence >= 70) {
                 confidenceClass = 'confidence-high';
-                statusDotClass = 'success';
-                statusText = 'High Confidence';
             } else if (confidence >= 40) {
                 confidenceClass = 'confidence-medium';
-                statusDotClass = 'warning';
-                statusText = 'Medium Confidence';
             } else {
                 confidenceClass = 'confidence-low';
-                statusDotClass = 'error';
-                statusText = 'Low Confidence';
             }
             
             return `
@@ -160,12 +154,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>
                         <span class="confidence-badge ${confidenceClass}">
                             ${confidence}%
-                        </span>
-                    </td>
-                    <td>
-                        <span class="status-badge">
-                            <span class="status-dot ${statusDotClass}"></span>
-                            ${statusText}
                         </span>
                     </td>
                 </tr>
